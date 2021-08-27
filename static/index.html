@@ -1,0 +1,299 @@
+<meta charset="utf-8">
+<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<script type="module">
+import { css, h1, add, style, hr } from "https://js.sabae.cc/stdom.js";
+import { img, cr } from "/std.js";
+import { searchBox } from "/searchBox.js";
+import { CSV } from "Https://js.sabae.cc/CSV.js";
+import { ArrayUtil } from "Https://js.sabae.cc/ArrayUtil.js";
+
+const navi = () => {
+  const navi = cr("div", document.body, null, "navi");
+  const a = cr("span", navi, "データカタログサイト");
+  const divmenu = cr("div", navi);
+  const menu = ["データカタログサイトとは", "利用規約", "お知らせ", "データ", "開発者向け情報", "お問い合わせ"];
+  for (const m of menu) {
+    cr("div", divmenu, m);
+  }
+  style({
+    ".navi": {
+      "background-color": "gray",
+      color: "white",
+    },
+    ".navi span": {
+      display: "inline-block",
+      padding: ".5em",
+      "font-size": "150%",
+    },
+    ".navi > div": {
+      "background-color": "#333",
+      "margin": ".5em 0 0 0",
+      "padding": 0,
+    },
+    ".navi > div > div": {
+      display: "inline-block",
+      "font-size": "70%",
+      padding: "1em",
+      margin: 0,
+    },
+  })
+};
+const footer = () => {
+  hr();
+  const divf = cr("footer", document.body);
+  cr("div", divf, "CC BY Code for FUKUI");
+  const img = cr("img", divf);
+  img.src = "/img/ckan-logo.svg";
+
+  style({
+    footer: {
+      "text-align": "center",
+      "font-size": "80%",
+      "margin": "1em",
+    },
+    "footer img": {
+      height: "2em",
+      margin: ".5em",
+    },
+  })
+};
+
+let datasets = null;
+const api = async (name) => {
+  if (!datasets) {
+    datasets = CSV.toJSON(await CSV.fetch("/datasets.csv"));
+  }
+  if (name == "organization") {
+    return ArrayUtil.toUnique(datasets.map(d => d.organization));
+  } else if (name == "group") {
+    return ArrayUtil.toUnique(datasets.map(d => d.title));
+  } else if (name == "tag") {
+    return ["教育", "観光", "大字"];
+  } else if (name == "format") {
+    return ["CSV", "JSON"];
+  } else if (name == "search") {
+    return datasets;
+  } else if (name.startsWith("/dataset/")) {
+    const id = name.substring("/dataset/".length);
+    console.log(id, datasets);
+    return datasets.find(d => d.id == id);
+  }
+  return null;
+};
+
+const groups = async (parent) => {
+  const g = cr("div", parent, null, "groups");
+  const menu = [
+    ["組織", "organization"],
+    ["グループ", "group"],
+    ["タグ", "tag"],
+    ["フォーマット", "format"],
+  ];
+  for (const m of menu) {
+    const div = cr("div", g);
+    const h = cr("h2", div, m[0]);
+    const list = cr("div", g);
+    const menus = await api(m[1]);
+    for (const s of menus) {
+      cr("div", list, s);
+    }
+  }
+
+  style({
+    ".groups": {
+      border: "1px solid gray",
+      "border-right": "none",
+      display: "inline-block",
+      width: "14em",
+    },
+    ".groups h2": {
+      "background-color": "#ddd",
+      "margin": "0",
+      "padding": ".1em 1.5em",
+      "font-size": "100%",
+      "background-image": "url(/img/icon_filter.svg)",
+      "background-repeat": "no-repeat",
+      "background-position": ".25em",
+      "background-size": "auto 1em",
+    },
+    ".groups > div > div": {
+      padding: ".1em 1em",
+    },
+    ".groups > div > div:last-child": {
+      "margin-bottom": "1em",
+    }
+  });
+};
+
+
+const showDataset = async (parent, id) => {
+  const div = cr("div", parent, null, "dataset");
+  const list = await api(id);
+
+  cr("h2", div, list.organization + " - " + list.title);
+
+  cr("h3", div, "データとリソース");
+  cr("div", div, list.description);
+
+  cr("h3", div, "追加情報");
+  const tbl = cr("table", div);
+  const tr = cr("tr", tbl);
+  cr("th", tr, "フィールド");
+  cr("th", tr, "値");
+  for (const d in list) {
+    const tr = cr("tr", tbl);
+    const th = cr("td", tr);
+    th.textContent = d;
+    const td = cr("td", tr);
+    td.textContent = list[d];
+  }
+
+  style({
+    ".dataset table": {
+      display: "inline-block",
+      background: "red",
+    },
+    ".dataset table td, .dataset table th": {
+    	background: "#eee",
+      "text-align": "left",
+      width: "300px",
+    },
+    ".dataset table tr:nth-child(even) td": {
+    	background: "#fff",
+    },
+  });
+};
+
+const showResult = async (parent) => {
+  const div = cr("div", parent, null, "result");
+
+  const list = await api("search");
+  const s = list.length + "件のデータセットが見つかりました";
+  cr("div", div, s);
+  const ul = cr("ul", div);
+  for (const d of list) {
+    const li = cr("li", ul);
+    const a = cr("a", li, d.organization + " - " + d.title);
+    a.href = "/dataset/" + d.id;
+    a.onclick = (e) => {
+      history.pushState({}, null, a.href);
+      e.preventDefault();
+      window.onpopstate(); // 無理やり呼び出し
+    };
+    cr("div", li, d.description);
+    cr("div", li, "作成日:" + d.createdTime);
+    cr("div", li, "更新日:" + d.lastUpdate);
+  }
+
+  style({
+    ".result div": {
+      "font-size": "90%",
+      "margin": "1em 0",
+    },
+    ul: {
+      "list-style-type": "none",
+      margin: 0,
+      padding: 0,
+    },
+    li: {
+      "border-bottom": "1px solid #aaa",
+      "margin": "1em 0",
+      "padding-bottom": ".5em",
+    },
+    "li div:first-child": {
+      "font-weight": 700,
+    },
+    "li div:nth-child(2)": {
+      color: "gray",
+    },
+    "li div:nth-child(3)": {
+      "font-size": "80%",
+    },
+    "li div:nth-child(4)": {
+      "font-size": "80%",
+    },
+  });
+
+};
+
+const dataset = () => {
+  const divds = cr("div", document.body, null, "dataset");
+  groups(divds)
+
+  const divmain = cr("div", divds, null, "main");
+  searchBox(divmain);
+
+  const redraw = () => {
+    divmain.innerHTML = "";
+
+    const path = window.location.pathname;
+    if (path.startsWith("/dataset/")) {
+      showDataset(divmain, path);
+    } else {
+      showResult(divmain);
+    }
+  };
+  redraw();
+  window.onpopstate = (e) => {
+    //console.log(e);
+    //console.log(window.location.pathname)
+    redraw();
+  };
+
+
+  style({
+    ".dataset": {
+      "white-space": "nowrap",
+    },
+    ".dataset .main": {
+      "vertical-align": "top",
+      display: "inline-block",
+      "border": "1px solid gray",
+      "min-height": "70vh",
+      //"border-left": "none",
+      "padding": "1em",
+      "width": "60vw",
+    }
+  });
+};
+
+const bcrumb = (stack) => {
+  const bc = cr("div", document.body, null, "bcrumb"); // breadcrumb
+  const img = cr("img", bc);
+  img.src = "/img/icon_home.svg";
+  for (const s of stack) {
+    cr("span", bc, " / ");
+    cr("span", bc, s);
+  }
+  style({
+    ".bcrumb": {
+      margin: ".3em 0 .3em .2em",
+      "font-size": "110%",
+    },
+    ".bcrumb img": {
+      height: "1em",
+    },
+  });
+};
+onload = async () => {
+  //css();
+  style({
+    body: {
+      "background-color": "#f6f6f6",
+      color: "#222",
+    },
+    hr: {
+      "background-color": "#333",
+      "height": ".3em",
+    },
+    a: {
+      color: "#222 !important",
+    }
+  });
+  navi();
+
+  bcrumb(["ベースレジストリ"]);
+  dataset();
+  footer();
+};
+</script>
