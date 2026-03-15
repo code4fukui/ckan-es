@@ -1,5 +1,7 @@
 # ckan-es
 
+> 日本語のREADMEはこちらです: [README.ja.md](README.ja.md)
+
 A Deno-based implementation of a CKAN (Comprehensive Knowledge Archive Network) server.
 
 ## Usage
