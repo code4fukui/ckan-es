@@ -1,13 +1,17 @@
 # ckan-es
 
-[Deno](https://deno.land/)
+A Deno-based implementation of a CKAN (Comprehensive Knowledge Archive Network) server.
 
-## how to run
+## Usage
 
 ```bsh
 deno run -A ckan.js
 ```
 
-## base project
+## Base Project
 
 [CKAN](https://ckan.org/)
+
+## License
+
+MIT License
