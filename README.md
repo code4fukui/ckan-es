@@ -16,4 +16,4 @@ deno run -A ckan.js
 
 ## License
 
-MIT License
+MIT License — see [LICENSE](LICENSE).
